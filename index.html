@@ -91,7 +91,7 @@
     // ⚠️ 소스 코드에는 토큰을 절대 적지 마세요.
     let GITHUB_TOKEN = localStorage.getItem('gh_prod_token_secure') || "";
     const REPO_OWNER = "AlexKim0526";
-    const REPO_NAME = "Factory_Project"; // 비공개 리포지토리 이름
+    const REPO_NAME = "process-data"; // 비공개 리포지토리 이름
     const MASTER_DB_FILE = "masterdb.csv"; // 실제 파일명
     const DATA_FILE = "data.json"; // 실제 파일명
 
@@ -255,3 +255,41 @@
         if (t === 'cat' && cat) createTargetRow(list, cat, 'cat');
         else box.querySelectorAll('.item-scroll input:checked').forEach(cb => createTargetRow(list, cb.value, 'item'));
         triggerAutoSave(); runCalculation();
+    }
+    function createTargetRow(c, n, t) {
+        if ([...c.querySelectorAll('.target-row')].some(r => r.dataset.name === n)) return;
+        const div = document.createElement('div'); div.className = 'target-row'; div.dataset.name = n; div.dataset.type = t;
+        div.innerHTML = `<span class="${t==='cat'?'cat-name-text':'item-name-text'}">${n}</span><button class="btn-del" onclick="this.parentElement.remove(); triggerAutoSave(); runCalculation();">×</button>`;
+        c.appendChild(div);
+    }
+    function runCalculation() {
+        const d = parseFloat(document.getElementById('cfgDays').value) || 22, h = parseFloat(document.getElementById('cfgHours').value) || 8, avail = d * h * 3600;
+        const f = document.getElementById('factorySelector').value, src = masterData.factories[f];
+        if(!src) return;
+        const procs = Array.from(document.querySelectorAll('.process-box')).map(box => ({
+            name: box.querySelector('.proc-name-input').value, ratio: (parseFloat(box.querySelector('.proc-ratio').value) || 0) / 100,
+            workTime: parseFloat(box.querySelector('.proc-time').value) || 0, targets: Array.from(box.querySelectorAll('.target-row')).map(r => ({ name: r.dataset.name, type: r.dataset.type }))
+        }));
+        let hHtml = `<tr><th>작업월</th><th>월 총물량</th><th>일평균</th>`;
+        procs.forEach(p => { hHtml += `<th>${p.name}</th>`; });
+        document.getElementById('tableHead').innerHTML = hHtml + `<th class="col-total">총 인원</th></tr>`;
+        let bHtml = '';
+        masterData.months.forEach(m => {
+            let mQty = 0; const cats = src.cat_monthly[m] || {};
+            for(let c in cats) mQty += cats[c];
+            bHtml += `<tr><td style="font-weight:bold;">${m}</td><td>${Math.round(mQty).toLocaleString()}</td><td style="color:#0969da; font-weight:bold;">${Math.round(mQty/d).toLocaleString()}</td>`;
+            let tMan = 0;
+            procs.forEach(p => {
+                let pQ = 0; p.targets.forEach(t => pQ += (t.type === 'cat' ? (cats[t.name] || 0) : (src.item_monthly[m][t.name] || 0)));
+                const man = (pQ * p.ratio * p.workTime) / avail;
+                bHtml += `<td><span class="manpower-bold">${man.toFixed(1)}명</span><br><span class="sub-qty">(${Math.round(pQ*p.ratio/d).toLocaleString()}건/일)</span></td>`;
+                tMan += man;
+            });
+            bHtml += `<td class="col-total"><span class="manpower-bold">${tMan.toFixed(1)}명</span></td></tr>`;
+        });
+        document.getElementById('resultBody').innerHTML = bHtml;
+    }
+    function triggerAutoSave() { if(autoSaveTimer) clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => saveToGitHub(), 3000); }
+</script>
+</body>
+</html>
