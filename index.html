@@ -2,61 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>정밀 생산성 분석 리포트 v9.8</title>
+    <title>정밀 생산성 분석 리포트 v9.9</title>
     <style>
         :root { --primary: #24292f; --bg: #f6f8fa; --border: #d0d7de; --accent: #2da44e; --blue: #0969da; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); margin: 0; color: #1f2328; font-size: 13px; height: 100vh; overflow: hidden; }
-        
         .wrapper { display: flex; flex-direction: column; height: 100vh; }
         .header-bar { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 100; }
         .main-content { display: grid; grid-template-columns: 550px 1fr; gap: 0; flex-grow: 1; overflow: hidden; }
-        
-        /* 좌우 독립 스크롤 레이아웃 */
         .column { height: 100%; overflow-y: auto; padding: 25px; box-sizing: border-box; border-right: 1px solid var(--border); scroll-behavior: smooth; }
         .column-right { background: white; }
-
         .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        /* 공정 박스 아코디언 */
         .process-box { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; background: #fff; border-left: 8px solid var(--blue); overflow: hidden; }
         .proc-header { padding: 12px 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
         .proc-header:hover { background: #f8fafc; }
         .proc-main-info { display: flex; align-items: center; gap: 10px; flex: 1; }
         .proc-body { padding: 15px; display: none; background: #fdfdfd; }
         .proc-body.active { display: block; }
-        
         .proc-name-input { font-weight: bold; border: 1px solid #cbd5e1; padding: 6px; border-radius: 4px; font-size: 13px; width: 180px; }
         .proc-ratio, .proc-time { width: 50px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: bold; padding: 4px; }
-        .input-label { font-size: 11px; font-weight: bold; color: #475569; }
-
         .factory-filter-area { margin-bottom: 20px; padding: 15px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 50; }
-        
-        /* 분석 리포트 테이블 */
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th, td { border: 1px solid var(--border); padding: 10px 6px; text-align: center; vertical-align: middle; }
         th { background: #f6f8fa; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
         .col-total { background: #fff8c5; font-weight: bold; border-left: 2px solid #d4a017; }
         .manpower-bold { font-weight: 900; font-size: 13px; color: #000; }
         .sub-qty { font-size: 10px; color: #64748b; display: block; margin-top: 3px; font-weight: normal; }
-        
         .btn { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-green { background: var(--accent); color: white; }
         .btn-del { color: #ef4444; background: none; font-size: 18px; font-weight: bold; padding: 0 5px; cursor: pointer; }
-
-        .item-scroll { max-height: 180px; overflow-y: auto; border: 1px solid #ddd; margin-top: 10px; padding: 8px; border-radius: 4px; background: #fff; }
-        .target-row { display: flex; justify-content: space-between; align-items: center; background: #f3f4f6; padding: 6px 12px; border-radius: 5px; margin-bottom: 4px; }
         .item-name-text { font-size: 11px; font-weight: 600; color: #0969da; }
         .cat-name-text { font-size: 11px; font-weight: 600; color: #1a7f37; }
-        .toggle-arrow { font-size: 12px; color: #666; transition: transform 0.2s; }
+        .target-row { display: flex; justify-content: space-between; align-items: center; background: #f3f4f6; padding: 6px 12px; border-radius: 5px; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
 <div class="wrapper">
     <div class="header-bar">
-        <div><strong>🚀 팩토리 생산성 시뮬레이터 v9.8</strong> <span id="dbStatus" style="margin-left:15px; font-size:11px; color:#94d3a2;">연결 대기...</span></div>
-        <div><span id="syncStatus" style="font-size:11px; margin-right:15px;">GitHub 대기</span><button class="btn btn-green" onclick="saveToGitHub()">💾 설정 저장</button></div>
+        <div><strong>🚀 팩토리 생산성 시뮬레이터 v9.9</strong> <span id="dbStatus" style="margin-left:15px; font-size:11px; color:#94d3a2;">연결 대기...</span></div>
+        <div><span id="syncStatus" style="font-size:11px; margin-right:15px;">GitHub 상태 대기</span><button class="btn btn-green" onclick="saveToGitHub()">💾 설정 저장</button></div>
     </div>
 
     <div class="main-content">
@@ -67,8 +52,8 @@
             <div class="card">
                 <h3>📅 기본 가동 환경</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div><label class="input-label">월 근무일 (일)</label><input type="number" id="cfgDays" value="22" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
-                    <div><label class="input-label">일 근무시간 (h)</label><input type="number" id="cfgHours" value="8" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
+                    <div><label style="font-size:11px; font-weight:bold;">월 근무일 (일)</label><input type="number" id="cfgDays" value="22" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
+                    <div><label style="font-size:11px; font-weight:bold;">일 근무시간 (h)</label><input type="number" id="cfgHours" value="8" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
                 </div>
                 <button class="btn btn-blue" style="width:100%; background:#24292f; margin-top:15px; padding:12px;" onclick="runCalculation()">⚡ 분석 결과 업데이트</button>
             </div>
@@ -81,12 +66,11 @@
                 <select id="factorySelector" style="padding:8px 15px; border-radius:6px; border:2px solid var(--blue); font-weight:bold;" onchange="runCalculation()">
                     <option value="Total">전체 합계 (Total)</option>
                 </select>
-                <span style="font-size:11px; color:#64748b; margin-left:auto;">* 물량은 <strong>일평균 처리건수</strong> 기준입니다.</span>
             </div>
             <table id="resultTable">
                 <thead id="tableHead"></thead>
                 <tbody id="resultBody">
-                    <tr><td colspan="10" style="padding:150px; color:#999;">데이터를 로드하는 중입니다...</td></tr>
+                    <tr><td colspan="10" style="padding:150px; color:#999;">데이터를 로딩 중...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -94,31 +78,40 @@
 </div>
 
 <script>
-    // 🔐 GitHub 설정 (토큰 직접 입력)
-    const GITHUB_TOKEN = "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"; // 발급받은 토큰을 여기에 넣으세요.
+    // 🔐 [중요] 반드시 새로 발급받은 ghp_... 토큰을 입력하세요.
+    const GITHUB_TOKEN = "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"; 
     const REPO_OWNER = "AlexKim0526";
-    const REPO_NAME = "process-data";
-    const MASTER_DB_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/masterdb.csv`;
-    const DATA_FILE = "data.json";
+    const REPO_NAME = "process-data"; // 예: process-data
+    const MASTER_DB_FILE = "masterdb.csv"; 
+    const DATA_FILE = "data.json"; 
 
-    // 작업월 정렬 및 표시용 매핑
     const MONTH_DISPLAY = ["", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"];
 
     let masterData = { hierarchy: {}, factories: { "Total": { cat_monthly: {}, item_monthly: {} } }, months: [] };
     let currentSha = "";
     let autoSaveTimer = null;
 
-    // 1. 데이터 로딩부
+    // 인코딩 도우미
+    function utf8_to_b64(str) { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); }
+    function b64_to_utf8(str) { try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch(e) { return atob(str); } }
+
+    // 1. 비공개 리포지토리 전용 DB 로드 함수 (API 방식)
     async function loadMasterDB() {
         const dbStatus = document.getElementById('dbStatus');
         try {
-            const res = await fetch(`${MASTER_DB_URL}?t=${new Date().getTime()}`);
-            if(!res.ok) throw new Error("DB 파일을 찾을 수 없습니다.");
+            dbStatus.innerText = "⏳ 비공개 DB 인증 중...";
+            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${MASTER_DB_FILE}`, {
+                headers: { "Authorization": `token ${GITHUB_TOKEN}`, "Accept": "application/vnd.github.v3.raw" }
+            });
+            if(!res.ok) throw new Error("인증 실패 또는 파일 없음");
             const text = await res.text();
             parseCSV(text);
             dbStatus.innerText = "✅ DB 연결됨";
             await loadConfig(); 
-        } catch (e) { dbStatus.innerText = "❌ DB 로드 실패"; }
+        } catch (e) { 
+            dbStatus.innerText = "❌ DB 로드 실패 (토큰/경로 확인)"; 
+            console.error(e);
+        }
     }
 
     function parseCSV(csv) {
@@ -126,20 +119,17 @@
         const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
         const tempMonths = new Set();
         const foundFactories = new Set();
-
         lines.slice(1).forEach(line => {
             if (!line.trim()) return;
             const cols = line.split(regex).map(c => c.replace(/^"|"$/g, '').trim());
             const cat = cols[1], item = cols[2], fName = cols[3], qty = parseFloat(cols[4]) || 0, seq = parseInt(cols[5]) || 0;
             const mStr = MONTH_DISPLAY[seq] || "Unknown";
-
             if (seq > 0 && cat && item) {
                 tempMonths.add(mStr);
                 foundFactories.add(fName);
                 if (!masterData.hierarchy[cat]) masterData.hierarchy[cat] = new Set();
                 masterData.hierarchy[cat].add(item);
                 if (!masterData.factories[fName]) masterData.factories[fName] = { cat_monthly: {}, item_monthly: {} };
-                
                 const update = (target) => {
                     const f = masterData.factories[target];
                     if (!f.cat_monthly[mStr]) f.cat_monthly[mStr] = {};
@@ -150,22 +140,16 @@
                 update("Total"); update(fName);
             }
         });
-
         masterData.months = Array.from(tempMonths).sort((a, b) => MONTH_DISPLAY.indexOf(a) - MONTH_DISPLAY.indexOf(b));
         const selector = document.getElementById('factorySelector');
+        selector.innerHTML = '<option value="Total">전체 합계 (Total)</option>';
         Array.from(foundFactories).sort().forEach(f => {
             const opt = document.createElement('option'); opt.value = f; opt.textContent = f; selector.appendChild(opt);
         });
         for (let cat in masterData.hierarchy) masterData.hierarchy[cat] = Array.from(masterData.hierarchy[cat]).sort();
     }
 
-    // 2. 인코딩/디코딩 (한글 깨짐 방지)
-    function utf8_to_b64(str) { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); }
-    function b64_to_utf8(str) { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
-
-    // 3. GitHub 동기화 로직
     async function loadConfig() {
-        if(!GITHUB_TOKEN || GITHUB_TOKEN.startsWith("YOUR")) return addNewProcess();
         try {
             const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { 
                 headers: { "Authorization": `token ${GITHUB_TOKEN}` } 
@@ -177,7 +161,7 @@
                 document.getElementById('processList').innerHTML = ''; 
                 config.forEach(c => addNewProcess(c.name, c.ratio || 100, c.workTime || 60, c.targets));
                 runCalculation();
-                document.getElementById('syncStatus').innerText = "✅ 로드됨";
+                document.getElementById('syncStatus').innerText = "✅ 로드 성공";
             } else { addNewProcess(); }
         } catch (e) { addNewProcess(); }
     }
@@ -190,37 +174,32 @@
             workTime: box.querySelector('.proc-time').value,
             targets: Array.from(box.querySelectorAll('.target-row')).map(r => ({ name: r.dataset.name, type: r.dataset.type }))
         }));
-
         try {
-            syncStatus.innerText = "⏳ 저장...";
-            const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
+            syncStatus.innerText = "⏳ 저장 중...";
+            const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { 
+                headers: { "Authorization": `token ${GITHUB_TOKEN}` } 
+            });
             if(shaRes.ok) { const d = await shaRes.json(); currentSha = d.sha; }
-
             const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, {
                 method: "PUT",
                 headers: { "Authorization": `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "Auto-save v9.8", content: utf8_to_b64(JSON.stringify(config)), sha: currentSha })
+                body: JSON.stringify({ message: "Update v9.9", content: utf8_to_b64(JSON.stringify(config)), sha: currentSha })
             });
-
             if (res.ok) {
                 const result = await res.json();
                 currentSha = result.content.sha;
                 syncStatus.innerText = "✅ 저장됨";
-            } else if(res.status === 401) {
-                syncStatus.innerText = "❌ 토큰 에러";
-                alert("토큰이 무효화되었습니다. 리포지토리가 공개(Public) 상태라면 토큰이 자동 삭제되니 비공개로 전환하세요.");
             } else { syncStatus.innerText = `❌ 실패 (${res.status})`; }
         } catch (e) { syncStatus.innerText = "❌ 연결 오류"; }
     }
 
-    // 4. UI 및 계산 기능
+    // UI 및 계산 함수 (v9.8과 동일하되 인코딩만 보강됨)
     function addNewProcess(name = "", ratio = 100, workTime = 60, targets = []) {
         const container = document.getElementById('processList');
         const div = document.createElement('div');
         div.className = 'process-box';
         let catOpts = `<option value="">-- 대분류 선택 --</option>`;
         Object.keys(masterData.hierarchy).sort().forEach(cat => { catOpts += `<option value="${cat}">${cat}</option>`; });
-
         div.innerHTML = `
             <div class="proc-header" onclick="toggleAccordion(this)">
                 <div class="proc-main-info" onclick="event.stopPropagation()">
@@ -231,9 +210,8 @@
                 <span class="toggle-arrow">▼</span>
             </div>
             <div class="proc-body">
-                <div class="selector-section" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <label class="input-label">대상 품목 추가</label>
-                    <select class="cat-sel" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; margin:8px 0;">${catOpts}</select>
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <select class="cat-sel" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; margin-bottom:10px;">${catOpts}</select>
                     <div style="display:flex; gap:10px;">
                         <button class="btn btn-blue" style="flex:1;" onclick="addTarget(this, 'cat')">대분류 전체 추가</button>
                         <button class="btn" style="flex:1; background:#64748b; color:white;" onclick="toggleItemScroll(this)">품목 개별 선택</button>
@@ -241,87 +219,61 @@
                     <div class="item-scroll" style="display:none;"></div>
                     <button class="btn btn-green item-add-btn" style="width:100%; display:none; margin-top:10px;" onclick="addTarget(this, 'item')">선택된 품목 추가</button>
                 </div>
-                <div class="target-list" style="margin-top:20px; border-top:1px solid #f1f5f9; padding-top:15px;">
-                    <label class="input-label" style="color:#64748b; margin-bottom:10px; display:block;">등록된 대상목록 & 작업시간(초)</label>
-                </div>
-                <button class="btn" style="width:100%; margin-top:20px; color:#ef4444; background:#fff1f2; border:1px solid #fecaca;" onclick="if(confirm('삭제할까요?')) { this.closest('.process-box').remove(); triggerAutoSave(); }">공정 삭제</button>
+                <div class="target-list" style="margin-top:15px;"></div>
+                <button class="btn" style="width:100%; margin-top:15px; color:#ef4444; background:#fff1f2; border:1px solid #fecaca;" onclick="this.closest('.process-box').remove(); triggerAutoSave();">공정 삭제</button>
             </div>`;
         container.appendChild(div);
         if (targets.length > 0) targets.forEach(t => createTargetRow(div.querySelector('.target-list'), t.name, t.type));
     }
 
-    function toggleAccordion(header) {
-        const body = header.nextElementSibling;
-        const arrow = header.querySelector('.toggle-arrow');
-        const isActive = body.classList.toggle('active');
-        arrow.innerText = isActive ? "▲" : "▼";
-    }
-
-    function toggleItemScroll(btn) {
-        const box = btn.closest('.process-box');
-        const cat = box.querySelector('.cat-sel').value;
-        const scroll = box.querySelector('.item-scroll');
-        const addBtn = box.querySelector('.item-add-btn');
-        if(!cat) return;
-        scroll.innerHTML = '';
-        masterData.hierarchy[cat].forEach(item => {
-            scroll.innerHTML += `<label style="display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:11px; cursor:pointer;"><input type="checkbox" value="${item}"> ${item}</label>`;
-        });
+    function toggleAccordion(h) { h.nextElementSibling.classList.toggle('active'); h.querySelector('.toggle-arrow').innerText = h.nextElementSibling.classList.contains('active') ? "▲" : "▼"; }
+    function toggleItemScroll(b) {
+        const box = b.closest('.process-box'), cat = box.querySelector('.cat-sel').value, scroll = box.querySelector('.item-scroll'), addBtn = box.querySelector('.item-add-btn');
+        if(!cat) return; scroll.innerHTML = '';
+        masterData.hierarchy[cat].forEach(i => { scroll.innerHTML += `<label style="display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:11px; cursor:pointer;"><input type="checkbox" value="${i}"> ${i}</label>`; });
         scroll.style.display = 'block'; addBtn.style.display = 'block';
     }
-
-    function addTarget(btn, type) {
-        const box = btn.closest('.process-box'), list = box.querySelector('.target-list'), cat = box.querySelector('.cat-sel').value;
-        if (type === 'cat' && cat) createTargetRow(list, cat, 'cat');
+    function addTarget(b, t) {
+        const box = b.closest('.process-box'), list = box.querySelector('.target-list'), cat = box.querySelector('.cat-sel').value;
+        if (t === 'cat' && cat) createTargetRow(list, cat, 'cat');
         else box.querySelectorAll('.item-scroll input:checked').forEach(cb => createTargetRow(list, cb.value, 'item'));
         triggerAutoSave(); runCalculation();
     }
-
-    function createTargetRow(container, name, type) {
-        if ([...container.querySelectorAll('.target-row')].some(r => r.dataset.name === name)) return;
-        const div = document.createElement('div');
-        div.className = 'target-row'; div.dataset.name = name; div.dataset.type = type;
-        const nClass = type === 'cat' ? 'cat-name-text' : 'item-name-text';
-        div.innerHTML = `<span class="${nClass}">${name}</span><button class="btn-del" onclick="this.parentElement.remove(); triggerAutoSave(); runCalculation();">×</button>`;
-        container.appendChild(div);
+    function createTargetRow(c, n, t) {
+        if ([...c.querySelectorAll('.target-row')].some(r => r.dataset.name === n)) return;
+        const div = document.createElement('div'); div.className = 'target-row'; div.dataset.name = n; div.dataset.type = t;
+        div.innerHTML = `<span class="${t==='cat'?'cat-name-text':'item-name-text'}">${n}</span><button class="btn-del" onclick="this.parentElement.remove(); triggerAutoSave(); runCalculation();">×</button>`;
+        c.appendChild(div);
     }
-
     function runCalculation() {
         const d = parseFloat(document.getElementById('cfgDays').value) || 22, h = parseFloat(document.getElementById('cfgHours').value) || 8, avail = d * h * 3600;
-        const fKey = document.getElementById('factorySelector').value, source = masterData.factories[fKey];
-        if(!source) return;
-
-        const processes = Array.from(document.querySelectorAll('.process-box')).map(box => ({
-            name: box.querySelector('.proc-name-input').value,
-            ratio: (parseFloat(box.querySelector('.proc-ratio').value) || 0) / 100,
-            workTime: parseFloat(box.querySelector('.proc-time').value) || 0,
-            targets: Array.from(box.querySelectorAll('.target-row')).map(r => ({ name: r.dataset.name, type: r.dataset.type }))
+        const f = document.getElementById('factorySelector').value, src = masterData.factories[f];
+        if(!src) return;
+        const procs = Array.from(document.querySelectorAll('.process-box')).map(box => ({
+            name: box.querySelector('.proc-name-input').value, ratio: (parseFloat(box.querySelector('.proc-ratio').value) || 0) / 100,
+            workTime: parseFloat(box.querySelector('.proc-time').value) || 0, targets: Array.from(box.querySelectorAll('.target-row')).map(r => ({ name: r.dataset.name, type: r.dataset.type }))
         }));
-
         let hHtml = `<tr><th>작업월</th><th>월 총물량</th><th>일평균</th>`;
-        processes.forEach(p => { hHtml += `<th>${p.name}</th>`; });
+        procs.forEach(p => { hHtml += `<th>${p.name}</th>`; });
         document.getElementById('tableHead').innerHTML = hHtml + `<th class="col-total">총 인원</th></tr>`;
-
         let bHtml = '';
         masterData.months.forEach(m => {
-            let monthQty = 0; const cats = source.cat_monthly[m] || {};
-            for(let c in cats) monthQty += cats[c];
-            bHtml += `<tr><td style="font-weight:bold;">${m}</td><td>${Math.round(monthQty).toLocaleString()}</td><td style="color:#0969da; font-weight:bold;">${Math.round(monthQty/d).toLocaleString()}</td>`;
-            let totalMan = 0;
-            processes.forEach(p => {
-                let pQty = 0;
-                p.targets.forEach(t => pQty += (t.type === 'cat' ? (cats[t.name] || 0) : (source.item_monthly[m][t.name] || 0)));
-                const man = (pQty * p.ratio * p.workTime) / avail;
-                const dailyQty = (pQty * p.ratio) / d;
-                bHtml += `<td><span class="manpower-bold">${man.toFixed(1)}명</span><br><span class="sub-qty">(${Math.round(dailyQty).toLocaleString()}건/일)</span></td>`;
-                totalMan += man;
+            let mQty = 0; const cats = src.cat_monthly[m] || {};
+            for(let c in cats) mQty += cats[c];
+            bHtml += `<tr><td style="font-weight:bold;">${m}</td><td>${Math.round(mQty).toLocaleString()}</td><td style="color:#0969da; font-weight:bold;">${Math.round(mQty/d).toLocaleString()}</td>`;
+            let tMan = 0;
+            procs.forEach(p => {
+                let pQ = 0; p.targets.forEach(t => pQ += (t.type === 'cat' ? (cats[t.name] || 0) : (src.item_monthly[m][t.name] || 0)));
+                const man = (pQ * p.ratio * p.workTime) / avail;
+                bHtml += `<td><span class="manpower-bold">${man.toFixed(1)}명</span><br><span class="sub-qty">(${Math.round(pQ*p.ratio/d).toLocaleString()}건/일)</span></td>`;
+                tMan += man;
             });
-            bHtml += `<td class="col-total"><span class="manpower-bold">${totalMan.toFixed(1)}명</span></td></tr>`;
+            bHtml += `<td class="col-total"><span class="manpower-bold">${tMan.toFixed(1)}명</span></td></tr>`;
         });
         document.getElementById('resultBody').innerHTML = bHtml;
     }
-
     function triggerAutoSave() { if(autoSaveTimer) clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => saveToGitHub(), 3000); }
+    
     window.onload = loadMasterDB;
 </script>
 </body>
