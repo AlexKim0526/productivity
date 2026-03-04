@@ -2,19 +2,23 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>정밀 생산성 분석 리포트 v9.9</title>
+    <title>팩토리 생산성 시뮬레이터 v10.0</title>
     <style>
         :root { --primary: #24292f; --bg: #f6f8fa; --border: #d0d7de; --accent: #2da44e; --blue: #0969da; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); margin: 0; color: #1f2328; font-size: 13px; height: 100vh; overflow: hidden; }
         .wrapper { display: flex; flex-direction: column; height: 100vh; }
-        .header-bar { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; z-index: 100; }
+        .header-bar { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        
+        /* 토큰 입력 바 */
+        .token-setup { background: #fffbdd; color: #735c0f; padding: 10px 20px; border-bottom: 1px solid #d4a017; display: flex; align-items: center; gap: 12px; font-size: 12px; flex-shrink: 0; }
+        .token-input { padding: 6px 12px; border: 1px solid #d4a017; border-radius: 4px; width: 380px; font-family: monospace; font-size: 12px; }
+        
         .main-content { display: grid; grid-template-columns: 550px 1fr; gap: 0; flex-grow: 1; overflow: hidden; }
         .column { height: 100%; overflow-y: auto; padding: 25px; box-sizing: border-box; border-right: 1px solid var(--border); scroll-behavior: smooth; }
         .column-right { background: white; }
         .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .process-box { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; background: #fff; border-left: 8px solid var(--blue); overflow: hidden; }
         .proc-header { padding: 12px 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
-        .proc-header:hover { background: #f8fafc; }
         .proc-main-info { display: flex; align-items: center; gap: 10px; flex: 1; }
         .proc-body { padding: 15px; display: none; background: #fdfdfd; }
         .proc-body.active { display: block; }
@@ -25,23 +29,31 @@
         th, td { border: 1px solid var(--border); padding: 10px 6px; text-align: center; vertical-align: middle; }
         th { background: #f6f8fa; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
         .col-total { background: #fff8c5; font-weight: bold; border-left: 2px solid #d4a017; }
-        .manpower-bold { font-weight: 900; font-size: 13px; color: #000; }
+        .manpower-bold { font-weight: 900; font-size: 13px; }
         .sub-qty { font-size: 10px; color: #64748b; display: block; margin-top: 3px; font-weight: normal; }
         .btn { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
         .btn-blue { background: var(--blue); color: white; }
         .btn-green { background: var(--accent); color: white; }
-        .btn-del { color: #ef4444; background: none; font-size: 18px; font-weight: bold; padding: 0 5px; cursor: pointer; }
+        .btn-del { color: #ef4444; background: none; font-size: 18px; font-weight: bold; cursor: pointer; }
         .item-name-text { font-size: 11px; font-weight: 600; color: #0969da; }
         .cat-name-text { font-size: 11px; font-weight: 600; color: #1a7f37; }
         .target-row { display: flex; justify-content: space-between; align-items: center; background: #f3f4f6; padding: 6px 12px; border-radius: 5px; margin-bottom: 4px; }
+        .toggle-arrow { font-size: 12px; color: #666; }
     </style>
 </head>
 <body>
 
 <div class="wrapper">
     <div class="header-bar">
-        <div><strong>🚀 팩토리 생산성 시뮬레이터 v9.9</strong> <span id="dbStatus" style="margin-left:15px; font-size:11px; color:#94d3a2;">연결 대기...</span></div>
-        <div><span id="syncStatus" style="font-size:11px; margin-right:15px;">GitHub 상태 대기</span><button class="btn btn-green" onclick="saveToGitHub()">💾 설정 저장</button></div>
+        <div><strong>🚀 팩토리 생산성 시뮬레이터 v10.0</strong> <span id="dbStatus" style="margin-left:15px; font-size:11px; color:#94d3a2;">연결 대기...</span></div>
+        <div><span id="syncStatus" style="font-size:11px; margin-right:15px;">GitHub 상태 대기</span><button class="btn btn-green" onclick="saveToGitHub(true)">💾 강제 저장</button></div>
+    </div>
+
+    <div class="token-setup" id="tokenBar">
+        🔑 <strong>GitHub Token 인증:</strong> 
+        <input type="password" id="ghTokenInput" class="token-input" placeholder="새로 발급받은 ghp_... 토큰을 입력하세요">
+        <button class="btn btn-blue" style="padding:5px 15px;" onclick="updateToken()">적용 및 데이터 로드</button>
+        <button class="btn" style="background:#eee; color:#333; padding:5px 10px;" onclick="clearToken()">토큰 초기화</button>
     </div>
 
     <div class="main-content">
@@ -55,10 +67,8 @@
                     <div><label style="font-size:11px; font-weight:bold;">월 근무일 (일)</label><input type="number" id="cfgDays" value="22" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
                     <div><label style="font-size:11px; font-weight:bold;">일 근무시간 (h)</label><input type="number" id="cfgHours" value="8" onchange="runCalculation()" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div>
                 </div>
-                <button class="btn btn-blue" style="width:100%; background:#24292f; margin-top:15px; padding:12px;" onclick="runCalculation()">⚡ 분석 결과 업데이트</button>
             </div>
         </div>
-
         <div class="column column-right">
             <h2>📊 월별 투입인원 분석</h2>
             <div class="factory-filter-area">
@@ -70,7 +80,7 @@
             <table id="resultTable">
                 <thead id="tableHead"></thead>
                 <tbody id="resultBody">
-                    <tr><td colspan="10" style="padding:150px; color:#999;">데이터를 로딩 중...</td></tr>
+                    <tr><td colspan="10" style="padding:150px; color:#999;">상단에 토큰을 입력하면 데이터를 로드합니다.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -78,12 +88,12 @@
 </div>
 
 <script>
-    // 🔐 [중요] 반드시 새로 발급받은 ghp_... 토큰을 입력하세요.
-    const GITHUB_TOKEN = "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"; 
+    // ⚠️ 소스 코드에는 토큰을 절대 적지 마세요.
+    let GITHUB_TOKEN = localStorage.getItem('gh_prod_token_secure') || "";
     const REPO_OWNER = "AlexKim0526";
-    const REPO_NAME = "Factory_Project"; // 예: process-data
-    const MASTER_DB_FILE = "masterdb.csv"; 
-    const DATA_FILE = "data.json"; 
+    const REPO_NAME = "Factory_Project"; // 비공개 리포지토리 이름
+    const MASTER_DB_FILE = "masterdb.csv"; // 실제 파일명
+    const DATA_FILE = "data.json"; // 실제 파일명
 
     const MONTH_DISPLAY = ["", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"];
 
@@ -91,42 +101,57 @@
     let currentSha = "";
     let autoSaveTimer = null;
 
-    // 인코딩 도우미
-    function utf8_to_b64(str) { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); }
-    function b64_to_utf8(str) { try { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); } catch(e) { return atob(str); } }
+    if(GITHUB_TOKEN) {
+        document.getElementById('ghTokenInput').value = GITHUB_TOKEN;
+        window.onload = loadMasterDB;
+    }
 
-    // 1. 비공개 리포지토리 전용 DB 로드 함수 (API 방식)
+    function updateToken() {
+        const val = document.getElementById('ghTokenInput').value.trim();
+        if(!val) return alert("토큰을 입력해주세요.");
+        GITHUB_TOKEN = val;
+        localStorage.setItem('gh_prod_token_secure', val);
+        loadMasterDB();
+    }
+
+    function clearToken() {
+        if(confirm("저장된 토큰을 지울까요?")) {
+            localStorage.removeItem('gh_prod_token_secure');
+            location.reload();
+        }
+    }
+
+    // [UTF-8 대응 안전 Base64]
+    function utf8_to_b64(str) { return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode('0x' + p1))); }
+    function b64_to_utf8(str) { return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')); }
+
     async function loadMasterDB() {
+        if(!GITHUB_TOKEN) return;
         const dbStatus = document.getElementById('dbStatus');
         try {
-            dbStatus.innerText = "⏳ 비공개 DB 인증 중...";
+            dbStatus.innerText = "⏳ 인증 중...";
             const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${MASTER_DB_FILE}`, {
                 headers: { "Authorization": `token ${GITHUB_TOKEN}`, "Accept": "application/vnd.github.v3.raw" }
             });
-            if(!res.ok) throw new Error("인증 실패 또는 파일 없음");
+            if(!res.ok) throw new Error();
             const text = await res.text();
             parseCSV(text);
-            dbStatus.innerText = "✅ DB 연결됨";
+            dbStatus.innerText = "✅ 연결됨";
             await loadConfig(); 
-        } catch (e) { 
-            dbStatus.innerText = "❌ DB 로드 실패 (토큰/경로 확인)"; 
-            console.error(e);
-        }
+        } catch (e) { dbStatus.innerText = "❌ 인증 실패 (토큰 확인)"; }
     }
 
     function parseCSV(csv) {
         const lines = csv.split(/\r?\n/);
         const regex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-        const tempMonths = new Set();
-        const foundFactories = new Set();
+        const tempMonths = new Set(), foundFactories = new Set();
         lines.slice(1).forEach(line => {
             if (!line.trim()) return;
             const cols = line.split(regex).map(c => c.replace(/^"|"$/g, '').trim());
             const cat = cols[1], item = cols[2], fName = cols[3], qty = parseFloat(cols[4]) || 0, seq = parseInt(cols[5]) || 0;
             const mStr = MONTH_DISPLAY[seq] || "Unknown";
             if (seq > 0 && cat && item) {
-                tempMonths.add(mStr);
-                foundFactories.add(fName);
+                tempMonths.add(mStr); foundFactories.add(fName);
                 if (!masterData.hierarchy[cat]) masterData.hierarchy[cat] = new Set();
                 masterData.hierarchy[cat].add(item);
                 if (!masterData.factories[fName]) masterData.factories[fName] = { cat_monthly: {}, item_monthly: {} };
@@ -151,12 +176,9 @@
 
     async function loadConfig() {
         try {
-            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { 
-                headers: { "Authorization": `token ${GITHUB_TOKEN}` } 
-            });
+            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
             if (res.ok) {
-                const data = await res.json();
-                currentSha = data.sha;
+                const data = await res.json(); currentSha = data.sha;
                 const config = JSON.parse(b64_to_utf8(data.content));
                 document.getElementById('processList').innerHTML = ''; 
                 config.forEach(c => addNewProcess(c.name, c.ratio || 100, c.workTime || 60, c.targets));
@@ -166,7 +188,8 @@
         } catch (e) { addNewProcess(); }
     }
 
-    async function saveToGitHub() {
+    async function saveToGitHub(isManual = false) {
+        if(!GITHUB_TOKEN) return alert("토큰을 먼저 입력하세요.");
         const syncStatus = document.getElementById('syncStatus');
         const config = Array.from(document.querySelectorAll('.process-box')).map(box => ({
             name: box.querySelector('.proc-name-input').value,
@@ -176,24 +199,18 @@
         }));
         try {
             syncStatus.innerText = "⏳ 저장 중...";
-            const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { 
-                headers: { "Authorization": `token ${GITHUB_TOKEN}` } 
-            });
+            const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
             if(shaRes.ok) { const d = await shaRes.json(); currentSha = d.sha; }
             const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, {
                 method: "PUT",
                 headers: { "Authorization": `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "Update v9.9", content: utf8_to_b64(JSON.stringify(config)), sha: currentSha })
+                body: JSON.stringify({ message: "Update v10.0", content: utf8_to_b64(JSON.stringify(config)), sha: currentSha })
             });
-            if (res.ok) {
-                const result = await res.json();
-                currentSha = result.content.sha;
-                syncStatus.innerText = "✅ 저장됨";
-            } else { syncStatus.innerText = `❌ 실패 (${res.status})`; }
-        } catch (e) { syncStatus.innerText = "❌ 연결 오류"; }
+            if (res.ok) { currentSha = (await res.json()).content.sha; syncStatus.innerText = "✅ 저장됨"; }
+            else { syncStatus.innerText = `❌ 실패 (${res.status})`; }
+        } catch (e) { syncStatus.innerText = "❌ 오류"; }
     }
 
-    // UI 및 계산 함수 (v9.8과 동일하되 인코딩만 보강됨)
     function addNewProcess(name = "", ratio = 100, workTime = 60, targets = []) {
         const container = document.getElementById('processList');
         const div = document.createElement('div');
@@ -216,11 +233,11 @@
                         <button class="btn btn-blue" style="flex:1;" onclick="addTarget(this, 'cat')">대분류 전체 추가</button>
                         <button class="btn" style="flex:1; background:#64748b; color:white;" onclick="toggleItemScroll(this)">품목 개별 선택</button>
                     </div>
-                    <div class="item-scroll" style="display:none;"></div>
+                    <div class="item-scroll" style="display:none; max-height:180px; overflow-y:auto; border:1px solid #ddd; margin-top:10px; padding:8px; border-radius:4px; background:#fff;"></div>
                     <button class="btn btn-green item-add-btn" style="width:100%; display:none; margin-top:10px;" onclick="addTarget(this, 'item')">선택된 품목 추가</button>
                 </div>
-                <div class="target-list" style="margin-top:15px;"></div>
-                <button class="btn" style="width:100%; margin-top:15px; color:#ef4444; background:#fff1f2; border:1px solid #fecaca;" onclick="this.closest('.process-box').remove(); triggerAutoSave();">공정 삭제</button>
+                <div class="target-list" style="margin-top:15px; border-top:2px solid #f1f5f9; padding-top:15px;"></div>
+                <button class="btn" style="width:100%; margin-top:15px; color:#ef4444; background:#fff1f2; border:1px solid #fecaca;" onclick="if(confirm('삭제할까요?')) { this.closest('.process-box').remove(); triggerAutoSave(); }">공정 삭제</button>
             </div>`;
         container.appendChild(div);
         if (targets.length > 0) targets.forEach(t => createTargetRow(div.querySelector('.target-list'), t.name, t.type));
@@ -238,43 +255,3 @@
         if (t === 'cat' && cat) createTargetRow(list, cat, 'cat');
         else box.querySelectorAll('.item-scroll input:checked').forEach(cb => createTargetRow(list, cb.value, 'item'));
         triggerAutoSave(); runCalculation();
-    }
-    function createTargetRow(c, n, t) {
-        if ([...c.querySelectorAll('.target-row')].some(r => r.dataset.name === n)) return;
-        const div = document.createElement('div'); div.className = 'target-row'; div.dataset.name = n; div.dataset.type = t;
-        div.innerHTML = `<span class="${t==='cat'?'cat-name-text':'item-name-text'}">${n}</span><button class="btn-del" onclick="this.parentElement.remove(); triggerAutoSave(); runCalculation();">×</button>`;
-        c.appendChild(div);
-    }
-    function runCalculation() {
-        const d = parseFloat(document.getElementById('cfgDays').value) || 22, h = parseFloat(document.getElementById('cfgHours').value) || 8, avail = d * h * 3600;
-        const f = document.getElementById('factorySelector').value, src = masterData.factories[f];
-        if(!src) return;
-        const procs = Array.from(document.querySelectorAll('.process-box')).map(box => ({
-            name: box.querySelector('.proc-name-input').value, ratio: (parseFloat(box.querySelector('.proc-ratio').value) || 0) / 100,
-            workTime: parseFloat(box.querySelector('.proc-time').value) || 0, targets: Array.from(box.querySelectorAll('.target-row')).map(r => ({ name: r.dataset.name, type: r.dataset.type }))
-        }));
-        let hHtml = `<tr><th>작업월</th><th>월 총물량</th><th>일평균</th>`;
-        procs.forEach(p => { hHtml += `<th>${p.name}</th>`; });
-        document.getElementById('tableHead').innerHTML = hHtml + `<th class="col-total">총 인원</th></tr>`;
-        let bHtml = '';
-        masterData.months.forEach(m => {
-            let mQty = 0; const cats = src.cat_monthly[m] || {};
-            for(let c in cats) mQty += cats[c];
-            bHtml += `<tr><td style="font-weight:bold;">${m}</td><td>${Math.round(mQty).toLocaleString()}</td><td style="color:#0969da; font-weight:bold;">${Math.round(mQty/d).toLocaleString()}</td>`;
-            let tMan = 0;
-            procs.forEach(p => {
-                let pQ = 0; p.targets.forEach(t => pQ += (t.type === 'cat' ? (cats[t.name] || 0) : (src.item_monthly[m][t.name] || 0)));
-                const man = (pQ * p.ratio * p.workTime) / avail;
-                bHtml += `<td><span class="manpower-bold">${man.toFixed(1)}명</span><br><span class="sub-qty">(${Math.round(pQ*p.ratio/d).toLocaleString()}건/일)</span></td>`;
-                tMan += man;
-            });
-            bHtml += `<td class="col-total"><span class="manpower-bold">${tMan.toFixed(1)}명</span></td></tr>`;
-        });
-        document.getElementById('resultBody').innerHTML = bHtml;
-    }
-    function triggerAutoSave() { if(autoSaveTimer) clearTimeout(autoSaveTimer); autoSaveTimer = setTimeout(() => saveToGitHub(), 3000); }
-    
-    window.onload = loadMasterDB;
-</script>
-</body>
-</html>
