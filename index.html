@@ -280,7 +280,7 @@
 
     async function loadConfig() {
         try {
-            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DATA_FILE}`, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
+            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/${DATA_FILE}`, { headers: { "Authorization": `token ${GITHUB_TOKEN}` } });
             if (res.ok) {
                 const data = await res.json(); currentSha = data.sha;
                 const config = JSON.parse(decodeURIComponent(escape(atob(data.content))));
